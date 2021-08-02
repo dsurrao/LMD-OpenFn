@@ -1,3 +1,6 @@
+# Deprecated
+Use repo [LMD-dhis2](https://github.com/dsurrao/LMD-dhis2)
+
 # LMD-OpenFn
 
 ## Jobs
