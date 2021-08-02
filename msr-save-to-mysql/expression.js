@@ -4,6 +4,12 @@ alterState(state => {
         'meta_qa_init': 'MIEXZbeYTUN', 'meta_qa_date': 'Iq4nr2J6WYv',
         'cha_name': 'O2q3dVLwZhY', 'chss_name': 'SXrDkc6uU8n',
         'community': 'YdWbmwaM4ON', 'community_id': 'jImsP4iGvVj',
+        'dhis_header_cha_id': 'VZrh9dUAdDp',
+        'dhis_header_chss_id': 'MZHUYNYXbH3',
+        'dhis_header_health_facility': 'Si6xf0KEc7D',
+        'dhis_header_district': 'qEnNoqCDttn',
+        'dhis_header_month_reported': 'HRV5VqsMNt3',
+        'dhis_header_year_reported': 'N3aptMjmGtP',
         '1_2_a_routine_household_visits': 'Aix5nQuHZZ7',
         '1_2_b_births_community_home': 'zCnimxEoDLw', '1_2_c_births_facility': 'm0hhusfnr83',
         '1_2_d_still_births': 'My6fBAMvQff', '1_2_e_neonatal_deaths': 'uHT4lPmgcWe',
@@ -117,6 +123,12 @@ alterState(state => {
         return [chss, facility, district];
     }
 
+    /* form data is valid if at least one field is not empty */
+    function validateFormData(periodData, dhis2Codes) {
+        let columnNames = Object.keys(dhis2Codes);
+        return !columnNames.every(c => dataValueByCode(periodData, dhis2Codes[c]) == null);
+    }
+
     /* Returns an array of the form below that can be passed to upsertMany()
         [
             { meta_uuid: 'kwIzfzpJ82z', cha_name: 'Dominic Surraos', ... },
@@ -124,7 +136,7 @@ alterState(state => {
             ...
         ]
     */
-    function getUpsertData(dhis2DataValues, organisationUnits) {
+    function getUpsertData(dhis2DataValues, organisationUnits, dhis2Codes) {
         let reorganizedData = reorganizeData(dhis2DataValues, ['orgUnit', 'period']);
         let insertData = [], insertRow;
         let orgUnit, orgUnitData;
@@ -154,10 +166,11 @@ alterState(state => {
                     'chss_id': chss,
                     'health_facility': facility,
                     'district': district,
+                    'valid': validateFormData(periodData, dhis2Codes)
                 };
-                columnNames = Object.keys(DHIS2_CODES);
+                columnNames = Object.keys(dhis2Codes);
                 columnNames.map(c => insertRow[c] = dataValueByCode(periodData,
-                    DHIS2_CODES[c]));
+                    dhis2Codes[c]));
                 insertData.push(insertRow);
             }
         }
@@ -167,7 +180,7 @@ alterState(state => {
 
     /* Assumes state.organisationUnits exists */
     return {...state, upsertData: getUpsertData(state.data.dataValues, 
-        state.organisationUnits)};
+        state.organisationUnits, DHIS2_CODES)};
 });
 
 upsertMany('de_cha_monthly_service_report', state => state.upsertData);
